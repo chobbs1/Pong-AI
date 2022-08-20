@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtGui import QPainter, QBrush, QPen
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal, QRect
+from PyQt5.QtCore import Qt, QTimer, QRect
 
 class Paddle(QWidget):
     height = 75
@@ -30,27 +30,40 @@ class Paddle(QWidget):
         return QRect(self.x,self.y,self.width,self.height)
 
     def move_up(self):
-        print(self.y)
         if self.y - self.increment >= self.lower_bound:
             self.y = self.y - self.increment
 
     def move_down(self):
-        if self.y + self.increment + self.height < self.upper_bound:
+        if self.y + self.increment + self.height <= self.upper_bound:
             self.y = self.y + self.increment
 
 class Ball(QWidget):
     radius = 20
 
-    def __init__(self,x,y):
+    vx = 0 # pixels / sec
+    vy = 0
+
+    def __init__(self,x,y,delta_ms):
         super().__init__()
         self.x = int(x/2)
         self.y = int(y/2)
+        self.delta_s = delta_ms 
+        self.vx = y * self.delta_s
+
+
+    def update_ball(self):
+        self.x = int(self.x + self.vx * self.delta_s)
+        print(self.x)
+
+        # self.x = int(self.x + self.vx * self.delta_ms)
 
     def draw_ball(self):
         return QRect(self.x,self.y,self.radius,self.radius)
 
 
 class Window(QMainWindow):
+    dt = 50
+
     def __init__(self):
         super().__init__()
  
@@ -62,9 +75,17 @@ class Window(QMainWindow):
 
         self.p1 = Paddle(self.width,self.height)
         self.p2 = Paddle(0,self.height)
-        self.ball = Ball(self.width,self.height)
+        self.ball = Ball(self.width,self.height,self.dt)
  
         self.init_window()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.ball.update_ball)
+        self.timer.timeout.connect(self.timer_callback)
+        self.timer.start(self.dt)
+
+    def timer_callback(self):
+        self.update()
 
     def init_window(self):
         # self.setWindowIcon(QtGui.QIcon("icon.png"))
@@ -95,8 +116,6 @@ class Window(QMainWindow):
             self.p2.move_down()
 
         self.update()
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
